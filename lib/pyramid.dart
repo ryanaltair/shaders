@@ -13,6 +13,7 @@ class Pyramid extends StatefulWidget {
 class _PyramidState extends State<Pyramid> {
   ui.FragmentShader? _shader;
   ui.Image? _image;
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +49,8 @@ class _PyramidState extends State<Pyramid> {
     return Center(
       child: CustomPaint(
         size: const Size(500 * 0.8, 658 * 0.8),
-        painter: ShaderPainter(shader: shader, image: image),
+        painter:
+            ShaderPainter(shader: shader, image: image, burn: 0.1, value: 0.1),
       ),
     );
   }
@@ -63,8 +65,14 @@ class _PyramidState extends State<Pyramid> {
 }
 
 class ShaderPainter extends CustomPainter {
-  ShaderPainter({required this.shader, required this.image});
-
+  ShaderPainter({
+    required this.shader,
+    required this.image,
+    required this.value,
+    required this.burn,
+  });
+  final double value;
+  final double burn;
   ui.FragmentShader shader;
   ui.Image image;
 
@@ -73,6 +81,8 @@ class ShaderPainter extends CustomPainter {
     shader.setFloat(0, size.width);
     shader.setFloat(1, size.height);
     shader.setImageSampler(0, image);
+    shader.setFloat(2, value);
+    shader.setFloat(3, burn);
     final paint = Paint()..shader = shader;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),

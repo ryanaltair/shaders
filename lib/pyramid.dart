@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -14,10 +15,17 @@ class _PyramidState extends State<Pyramid> {
   ui.FragmentShader? _shader;
   ui.Image? _image;
   ui.Image? _noise;
+  late final StreamController<double> stream;
   @override
   void initState() {
     super.initState();
+    stream = StreamController();
     _loadShader();
+    double i = 0;
+    Timer.periodic(Duration(milliseconds: 50), (e) {
+      stream.add(sin(i)*0.5+0.5);
+      i += 0.03;
+    });
   }
 
   static Future<ui.Image> loadImageByProvider(
@@ -48,15 +56,21 @@ class _PyramidState extends State<Pyramid> {
       );
     }
     return Center(
-      child: CustomPaint(
-        size: const Size(500 * 0.8, 658 * 0.8),
-        painter: ShaderPainter(
-            shader: shader,
-            image: image,
-            value: 0.5,
-            burn: 0.5,
-            dissolve: noise),
-      ),
+      child: StreamBuilder<double>(
+          stream: stream.stream,
+          builder: (context, snapshot) {
+            print(snapshot.data);
+            return CustomPaint(
+              size: const Size(500 * 0.8, 658 * 0.8),
+              willChange :true,
+              painter: ShaderPainter(
+                  shader: shader,
+                  image: image,
+                  value:snapshot.data?? 0.0,
+                  burn: 0.04,
+                  dissolve: noise),
+            );
+          }),
     );
   }
 

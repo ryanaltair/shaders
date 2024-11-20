@@ -1,22 +1,35 @@
 #version 460 core
+#include <flutter/runtime_effect.glsl>
 
 precision mediump float;
-
-#include <flutter/runtime_effect.glsl>
 
 uniform vec2 uSize;
 uniform sampler2D uTexture;
 
 out vec4 fragColor;
-const float threshold = 0.5;//阈值
+
 void main() {
+    float rate = uSize.x / uSize.y;
+    float cellX = 2.0;
+    float cellY = 2.0;
+    float rowCount = 100.0;
     vec2 coo = FlutterFragCoord().xy / uSize;
-    vec4 color = texture(uTexture,coo);
+
+    vec2 sizeFmt = vec2(rowCount, rowCount / rate);
+    vec2 sizeMsk = vec2(cellX, cellY / rate);
+    vec2 posFmt = vec2(coo.x * sizeFmt.x, coo.y * sizeFmt.y);
+    float posMskX = floor(posFmt.x / sizeMsk.x) * sizeMsk.x;
+    float posMskY = floor(posFmt.y / sizeMsk.y) * sizeMsk.y;
+    vec2 posMsk = vec2(posMskX, posMskY) + 0.5 * sizeMsk;
+
+    bool inCircle = length(posMsk - posFmt)<cellX / 2.0;
     
-    float r = color.r;
-    float g = color.g;
-    float b = color.b;
-    g = r * 0.3 + g * 0.59 + b * 0.11;
-    g = g <= threshold ? 0.0 : 1.0;
-    fragColor = vec4(g, g, g, 1.0);
+    vec4 result;
+    if (inCircle) {
+        vec2 UVMosaic = vec2(posMsk.x / sizeFmt.x, posMsk.y / sizeFmt.y);
+        result = texture(uTexture, UVMosaic);
+    } else {
+        result = vec4(1.0, 1.0, 1.0, 0.0);
+    }
+    fragColor = result;
 }

@@ -13,7 +13,7 @@ class Pyramid extends StatefulWidget {
 class _PyramidState extends State<Pyramid> {
   ui.FragmentShader? _shader;
   ui.Image? _image;
-
+  ui.Image? _noise;
   @override
   void initState() {
     super.initState();
@@ -41,7 +41,8 @@ class _PyramidState extends State<Pyramid> {
   Widget build(BuildContext context) {
     final shader = _shader;
     final image = _image;
-    if (shader == null || image == null) {
+    final noise = _noise;
+    if (shader == null || image == null || noise == null) {
       return const Center(
         child: CircularProgressIndicator(),
       );
@@ -49,8 +50,12 @@ class _PyramidState extends State<Pyramid> {
     return Center(
       child: CustomPaint(
         size: const Size(500 * 0.8, 658 * 0.8),
-        painter:
-            ShaderPainter(shader: shader, image: image, burn: 0.1, value: 0.1),
+        painter: ShaderPainter(
+            shader: shader,
+            image: image,
+            value: 0.5,
+            burn: 0.5,
+            dissolve: noise),
       ),
     );
   }
@@ -60,6 +65,7 @@ class _PyramidState extends State<Pyramid> {
     ui.FragmentProgram program = await ui.FragmentProgram.fromAsset(path);
     _shader = program.fragmentShader();
     _image = await loadImageByProvider(AssetImage('assets/test.jpeg'));
+    _noise = await loadImageByProvider(AssetImage('assets/noise.png'));
     setState(() {});
   }
 }
@@ -68,6 +74,7 @@ class ShaderPainter extends CustomPainter {
   ShaderPainter({
     required this.shader,
     required this.image,
+    required this.dissolve,
     required this.value,
     required this.burn,
   });
@@ -75,12 +82,14 @@ class ShaderPainter extends CustomPainter {
   final double burn;
   ui.FragmentShader shader;
   ui.Image image;
+  ui.Image dissolve;
 
   @override
   void paint(Canvas canvas, Size size) {
     shader.setFloat(0, size.width);
     shader.setFloat(1, size.height);
     shader.setImageSampler(0, image);
+    shader.setImageSampler(1, dissolve); // the dissolve_texture
     shader.setFloat(2, value);
     shader.setFloat(3, burn);
     final paint = Paint()..shader = shader;
